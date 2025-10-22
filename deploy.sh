@@ -64,6 +64,15 @@ while [ -z "$BRANCH" ]; do
     fi
 done
 
+APP_PORT=""
+while [ -z "$APP_PORT" ]; do
+    read -p "Please enter docker app internal port number: " APP_PORT
+    if [ -z "$APP_PORT" ]; then
+        echo "Error: The app port cannot be empty."
+    fi
+done
+
+
 #get DIR out of repo name
 REPO_DIR=$(basename "$GITHUB_URL" .git) #Basename removes the lines https://github.com/ and leaves name of the repo while the .git removes the .git extension.
 
@@ -74,27 +83,36 @@ echo ""
 echo "Connection details confirmed."
 echo "Attempting to connect to $USERNAME@$IP using key: $SSH_KEY_PATH"
 
-# Assuming you have a retry function defined earlier in the script
-# retry_command 5 10 ssh -i "$SSH_KEY_PATH" "$USERNAME@$IP"
 
-# Or, without the retry function:
+#SSH
+nc -zv "$IP" 22
+
 /usr/bin/ssh -i "$SSH_KEY_PATH" "$USERNAME@$IP" << 'EOF' 
 	sudo apt update && sudo apt install git docker.io nginx docker-compose -y
 	sudo usermod -aG docker ubuntu
 	newgrp docker
 	sudo systemctl enable docker && sudo systemctl start docker && sudo systemctl start nginx && sudo systemctl enable nginx
+	systemctl status nginx && systemctl status docker
 	docker --version && nginx --version & docker-compose --version
 	mkdir HNG && cd HNG
 	if [ ! -d $REPO_DIR ]; then
 		git clone "https://${PAT}@${GITHUB_URL#http://}"
+                cd $REPO_DIR
 	else
-		echo "${REPO_DIR} exists"
+		echo "🔄 Repository already exists. Pulling latest changes..."
+ 		cd $REPO_DIR
+  		git fetch origin
+  		git checkout "$BRANCH"
+  		git pull origin "$BRANCH"
+
 	fi
 	cd $REPO_DIR
+
 	if [ -f Dockerfile ] || [ -f docker-compose.yml ]
 		echo "File is present"
 	else
 		echo "File not found"
 	docker-compose up -d
+	docker ps -a
 
 EOF
