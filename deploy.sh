@@ -1,5 +1,15 @@
 #!/bin/bash
 
+#Logging deployment script start
+echo "=============================="=================
+echo "🚀 Deployment Script Initiated 🚀"
+echo "================================================"
+
+LOG_FILE="deploy_$(date +%Y%m%d_%H%M%S).log"
+exec > >(tee -a "$LOG_FILE") 2>&1
+trap 'echo "❌ Error on line $LINENO. Exiting..."' ERR
+
+
 # Acknowledge the user
 echo "Please provide the server details for your SSH connection."
 echo "======================================================="
@@ -88,7 +98,7 @@ echo "Attempting to connect to $USERNAME@$IP using key: $SSH_KEY_PATH"
 #SSH
 nc -zv "$IP" 22
 
-/usr/bin/ssh -i "$SSH_KEY_PATH" "$USERNAME@$IP" << 'EOF' 
+/usr/bin/ssh -i "$SSH_KEY_PATH" "$USERNAME@$IP" <<EOF 
 	sudo apt update && sudo apt install git docker.io nginx docker-compose -y
 	sudo usermod -aG docker ubuntu
 	newgrp docker
@@ -114,12 +124,12 @@ nc -zv "$IP" 22
         sed -i "s/8000/$APP_PORT/g" backend/Dockerfile
         cat backend/Dockerfile | grep "EXPOSE"
     elif [ -f docker-compose.yml ]; then
-        if [ $(docker ps -a --format '{{.Names}}' | grep -q $REPO_DIR_project) ] && [ $(docker ps -a --format '{{.Status}}' | grep -q "Up") ]; then
+        if docker ps -a --format '{{.Names}}' | grep -q "$DOCKER_COMPOSE_PROJECT_NAME"; then
             echo "Container already exists. Stopping and removing existing container..."
             docker-compose down -v
-            docker-compose up -p $DOCKER_COMPOSE_PROJECT_NAME -d --build
+            docker-compose up -p "$DOCKER_COMPOSE_PROJECT_NAME" -d --build
         else
-            docker-compose up -p $DOCKER_COMPOSE_PROJECT_NAME -d --build
+            docker-compose up -p "$DOCKER_COMPOSE_PROJECT_NAME" -d --build
         fi
     else
 		echo "File not found"
