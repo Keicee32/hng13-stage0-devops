@@ -76,6 +76,7 @@ done
 #get DIR out of repo name
 REPO_DIR=$(basename "$GITHUB_URL" .git) #Basename removes the lines https://github.com/ and leaves name of the repo while the .git removes the .git extension.
 
+DOCKER_COMPOSE_PROJECT_NAME="$REPO_DIR"_project
 
 
 # Connect using the valid input
@@ -108,11 +109,22 @@ nc -zv "$IP" 22
 	fi
 	cd $REPO_DIR
 
-	if [ -f Dockerfile ] || [ -f docker-compose.yml ]
+	if [ -f Dockerfile ]; then
 		echo "File is present"
-	else
+        sed -i "s/8000/$APP_PORT/g" backend/Dockerfile
+        cat backend/Dockerfile | grep "EXPOSE"
+    elif [ -f docker-compose.yml ]; then
+        if [ $(docker ps -a --format '{{.Names}}' | grep -q $REPO_DIR_project) ] && [ $(docker ps -a --format '{{.Status}}' | grep -q "Up") ]; then
+            echo "Container already exists. Stopping and removing existing container..."
+            docker-compose down -v
+            docker-compose up -p $DOCKER_COMPOSE_PROJECT_NAME -d --build
+        else
+            docker-compose up -p $DOCKER_COMPOSE_PROJECT_NAME -d --build
+        fi
+    else
 		echo "File not found"
-	docker-compose up -d
-	docker ps -a
+    fi
+    
+    
 
 EOF
