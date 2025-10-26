@@ -1,0 +1,39 @@
+version: "3.8"
+services:
+  blue-app:
+    image: ${BLUE_IMAGE}
+    container_name: blue-app
+    ports:
+      - "8081:3000"
+    networks:
+      - bridge-network
+    environment:
+      - APP_POOL=blue
+      - RELEASE_ID=${RELEASE_ID_BLUE}
+
+  green-app:
+    image: ${GREEN_IMAGE}
+    container_name: green-app
+    ports:
+      - "8082:3000"
+    networks:
+      - bridge-network
+    environment:
+      - APP_POOL=green
+      - RELEASE_ID=${RELEASE_ID_GREEN}
+  nginx:
+    image: nginx:latest
+    container_name: nginx-load-balancer
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - blue-app
+      - green-app
+    networks:
+      - bridge-network
+
+networks:
+  bridge-network:
+    driver: bridge
