@@ -33,6 +33,25 @@ services:
       - green-app
     networks:
       - bridge-network
+  
+  alert-watcher:
+    build: ./alert_watcher
+    container_name: alert-watcher
+    volumes:
+      - shared-logs:/var/log/nginx
+    environment:
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - ACTIVE_POOL=${ACTIVE_POOL}
+      - ERROR_RATE_THRESHOLD=${ERROR_RATE_THRESHOLD:-2}
+      - WINDOW_SIZE=${WINDOW_SIZE:-200}
+      - ALERT_COOLDOWN_SEC=${ALERT_COOLDOWN_SEC:-300}
+      - MAINTENANCE_MODE=true
+    depends_on:
+      - nginx
+      - blue-app
+      - green-app
+    networks:
+      - bridge-network
 
 networks:
   bridge-network:
