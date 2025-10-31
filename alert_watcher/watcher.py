@@ -5,7 +5,7 @@ import re
 import requests
 from collections import deque
 
-LOG_PATH = "/var/log/nginx/access.log"
+LOG_PATH = "/logs/access.log"
 WINDOW_SIZE = int(os.getenv("WINDOW_SIZE", 200))
 ERROR_THRESHOLD = float(os.getenv("ERROR_RATE_THRESHOLD", 2))
 COOLDOWN = int(os.getenv("ALERT_COOLDOWN_SEC", 300))
